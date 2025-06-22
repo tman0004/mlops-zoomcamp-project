@@ -10,13 +10,13 @@ from mlflow.entities import SourceType
 import os
 import toml
 
-secrets = toml.load(".streamlit/secrets.toml")
-aws_access_key_id = secrets["AWS_ACCESS_KEY_ID"]
-aws_secret_access_key = secrets["AWS_SECRET_ACCESS_KEY"]
+# secrets = toml.load(".streamlit/secrets.toml")
+# aws_access_key_id = secrets["AWS_ACCESS_KEY_ID"]
+# aws_secret_access_key = secrets["AWS_SECRET_ACCESS_KEY"]
 
-# Set environment variables for AWS credentials
-os.environ["AWS_ACCESS_KEY_ID"] = aws_access_key_id
-os.environ["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
+# # Set environment variables for AWS credentials
+# os.environ["AWS_ACCESS_KEY_ID"] = aws_access_key_id
+# os.environ["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
 
 @task
 def load_data(file_name: str):
