@@ -4,23 +4,67 @@ import numpy as np
 import mlflow.pyfunc
 from scipy.stats import ks_2samp
 from pipeline import preprocess_data
+import boto3
 
 import matplotlib.pyplot as plt
 
 st.title("Model Monitoring Dashboard")
 
 ref_data = pd.read_csv('data/train.csv')
-cur_data = pd.read_csv('data/test.csv')
+dynamodb = boto3.resource('dynamodb', region_name='us-west-1')
+table = dynamodb.Table('titanic_predictions')
+response = table.scan()
+items = response['Items']
+
+# If the table is large, handle pagination
+while 'LastEvaluatedKey' in response:
+    response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+    items.extend(response['Items'])
+
+# Load into pandas DataFrame
+cur_data = pd.DataFrame(items).drop(columns=['id'], errors='ignore')
 
 # Preprocess the data
 ref_data = preprocess_data(ref_data).drop(columns=['Survived'], errors='ignore')  # Drop target column if exists
-cur_data = preprocess_data(cur_data)
+# cur_data = preprocess_data(cur_data)
 
-st.header("Data Overview")
-st.write("Reference Data Shape:", ref_data.shape)
-st.write("Current Data Shape:", cur_data.shape)
+st.header("Data KPI Overview")
+# Starting test dataset
+previous_total = 418
+previous_survival_pct = 37.96
+previous_not_survival_pct = 62.04
+pred_counts = cur_data['Survived'].value_counts(normalize=True) * 100
+current_total = len(cur_data)
+current_survive_pct = pred_counts.get(1, 0)
+current_not_survive_pct = pred_counts.get(0, 0)
 
-st.header("Feature Drift Detection")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(
+        label="Total Predictions",
+        value=current_total,
+        delta=current_total - previous_total,
+        border=True,
+        help="Delta values are from model launch"
+    )
+with col2:
+    st.metric(
+        label="Predicted to survive",
+        value=f"{current_survive_pct:.2f}%",
+        delta=f"{current_survive_pct - previous_survival_pct:.2f}%",
+        border=True,
+        help="Delta values are from model launch"
+    )
+with col3:
+    st.metric(
+        label="Predicted not to survive",
+        value=f"{current_not_survive_pct:.2f}%",
+        delta=f"{current_not_survive_pct - previous_not_survival_pct:.2f}%",
+        border=True,
+        help="Delta values are from model launch"
+    )
+
+st.header("Data Drift Detection")
 feature = st.selectbox("Select Feature to Analyze", ref_data.columns)
 
 fig, ax = plt.subplots()
@@ -37,15 +81,3 @@ if p_value < 0.05:
     st.error("Significant drift detected!")
 else:
     st.success("No significant drift detected.")
-
-# write code to to show prediction distribution
-st.header("Prediction Distribution")
-mlflow.set_tracking_uri('sqlite:///mlflow.db')
-model = mlflow.pyfunc.load_model(model_uri="models:/titanic_model/2")
-predictions = model.predict(cur_data)
-fig_pred, ax_pred = plt.subplots()
-ax_pred.hist(predictions, bins=30, alpha=0.7, color='skyblue')
-ax_pred.set_title("Prediction Distribution")
-ax_pred.set_xlabel("Predicted Value")
-ax_pred.set_ylabel("Frequency")
-st.pyplot(fig_pred)
