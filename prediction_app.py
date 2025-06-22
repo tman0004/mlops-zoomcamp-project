@@ -5,7 +5,7 @@ import mlflow.pyfunc
 from pipeline import load_data, preprocess_data
 
 mlflow.set_tracking_uri('sqlite:///mlflow.db')
-model = mlflow.pyfunc.load_model(model_uri="models:/titanic_model/1")
+model = mlflow.pyfunc.load_model(model_uri="models:/titanic_model/2")
 
 st.title("Titanic Model Prediction")
 

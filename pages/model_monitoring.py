@@ -41,7 +41,7 @@ else:
 # write code to to show prediction distribution
 st.header("Prediction Distribution")
 mlflow.set_tracking_uri('sqlite:///mlflow.db')
-model = mlflow.pyfunc.load_model(model_uri="models:/titanic_model/1")
+model = mlflow.pyfunc.load_model(model_uri="models:/titanic_model/2")
 predictions = model.predict(cur_data)
 fig_pred, ax_pred = plt.subplots()
 ax_pred.hist(predictions, bins=30, alpha=0.7, color='skyblue')

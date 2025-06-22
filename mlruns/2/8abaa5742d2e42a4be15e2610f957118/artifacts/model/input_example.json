@@ -1,1 +1,0 @@
-{"columns": ["Pclass", "Age", "SibSp", "Parch", "Fare", "Sex_Encoded", "Deck_Encoded", "Embarked_Encoded"], "data": [[1, 45.5, 0, 0, 28.5, 0, 2, 2]]}

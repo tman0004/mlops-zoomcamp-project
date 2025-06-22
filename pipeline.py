@@ -5,6 +5,18 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from prefect import flow, task
 from sklearn.base import BaseEstimator
+import os
+from mlflow.entities import SourceType
+import os
+import toml
+
+secrets = toml.load(".streamlit/secrets.toml")
+aws_access_key_id = secrets["AWS_ACCESS_KEY_ID"]
+aws_secret_access_key = secrets["AWS_SECRET_ACCESS_KEY"]
+
+# Set environment variables for AWS credentials
+os.environ["AWS_ACCESS_KEY_ID"] = aws_access_key_id
+os.environ["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
 
 @task
 def load_data(file_name: str):
@@ -66,8 +78,9 @@ def evaluate_model(clf: BaseEstimator, X_test: pd.DataFrame, y_test: pd.Series):
 
 @flow
 def ml_pipeline():
+    
     mlflow.set_tracking_uri('sqlite:///mlflow.db')
-    mlflow.set_experiment('titanic_experiment')
+    mlflow.set_experiment('titanic_experiment2')
     
     with mlflow.start_run(): 
         df = load_data('data/train.csv')
