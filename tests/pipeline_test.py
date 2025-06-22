@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 import mlflow
 
+### UNIT TESTS FOR PIPELINE MODULES ###
 def test_load_data(tmp_path):
     # Create a temporary CSV file
     data = pd.DataFrame({
@@ -66,3 +67,32 @@ def test_evaluate_model():
     acc = evaluate_model.fn(clf, X, y)
     assert isinstance(acc, float)
     assert 0.0 <= acc <= 1.0
+
+#### INTEGRATION TESTS FOR PIPELINE MODULES ####
+def test_pipeline_integration(tmp_path):
+    # 1. Create a small CSV file as input
+    data = pd.DataFrame({
+        "PassengerId": [1, 2],
+        "Name": ["John Doe", "Jane Doe"],
+        "Sex": ["male", "female"],
+        "Age": [22, 30],
+        "Ticket": ["A/5 21171", "PC 17599"],
+        "Cabin": [None, "C85"],
+        "Embarked": ["S", "C"],
+        "Survived": [1, 0]
+    })
+    file_path = tmp_path / "integration_test.csv"
+    data.to_csv(file_path, index=False)
+
+    # 2. Run the pipeline steps
+    df_loaded = load_data.fn(str(file_path))
+    df_processed = preprocess_data.fn(df_loaded)
+    clf, X_test, y_test = train_model.fn(df_processed)
+    acc = evaluate_model.fn(clf, X_test, y_test)
+
+    # 3. Assert the pipeline runs and produces reasonable output
+    assert isinstance(acc, float)
+    assert 0.0 <= acc <= 1.0
+    assert hasattr(clf, "predict")
+    assert isinstance(X_test, pd.DataFrame)
+    assert isinstance(y_test, pd.Series)
