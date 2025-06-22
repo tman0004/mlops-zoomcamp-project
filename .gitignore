@@ -1,2 +1,5 @@
 .streamlit/secrets.toml
 model_training.ipynb
+.vscode/settings.json
+mlruns/
+__pycache__/
