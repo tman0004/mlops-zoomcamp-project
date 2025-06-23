@@ -1,13 +1,29 @@
+'''
+This module implements an end-to-end machine learning pipeline for the Titanic 
+dataset using Prefect for orchestration and MLflow for experiment tracking. 
+The pipeline includes data loading, preprocessing, model training with a RandomForestClassifier, 
+evaluation, and logging of parameters and metrics. 
+The code is structured with Prefect tasks and flows, and supports experiment 
+reproducibility and tracking via MLflow.
+
+Main functionalities:
+- Load Titanic dataset from a CSV file.
+- Preprocess data: encode categorical variables, handle missing values, and drop irrelevant columns.
+- Train a RandomForestClassifier and log model parameters and artifacts to MLflow.
+- Evaluate the trained model and log accuracy metrics.
+- Orchestrate the workflow using Prefect's task and flow abstractions.
+
+Intended for use in MLOps workflows and experiment tracking environments.
+'''
+import os
 import mlflow
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-from prefect import flow, task
 from sklearn.base import BaseEstimator
-import os
+from prefect import flow, task
 from mlflow.entities import SourceType
-import os
 import toml
 
 # secrets = toml.load(".streamlit/secrets.toml")
@@ -20,12 +36,39 @@ import toml
 
 @task
 def load_data(file_name: str):
+    """
+    Loads a dataset from a CSV file into a pandas DataFrame.
+
+    Args:
+        file_name (str): The path to the CSV file to be loaded.
+
+    Returns:
+        pandas.DataFrame: The loaded dataset as a DataFrame.
+    """
     # Load the dataset from a CSV file
-    df = pd.read_csv(file_name)    
+    df = pd.read_csv(file_name)
     return df
 
 @task
 def preprocess_data(df: pd.DataFrame):
+    """
+    Preprocesses the input Titanic DataFrame by encoding categorical variables, handling missing 
+    values, and dropping unnecessary columns.
+    Parameters:
+        df (pd.DataFrame): The input DataFrame containing Titanic passenger data.
+    Returns:
+        pd.DataFrame: The preprocessed DataFrame with encoded features and irrelevant columns 
+        removed.
+    Processing steps:
+        - Encodes the 'Sex' column as 'Sex_Encoded' (male: 0, female: 1).
+        - Fills missing values in the 'Age' column with the median age.
+        - Extracts the deck letter from the 'Cabin' column, fills missing values with 'U', 
+          and encodes as 'Deck_Encoded'.
+        - Fills missing values in the 'Embarked' column with the mode and encodes as 
+          'Embarked_Encoded' (C: 0, Q: 1, S: 2).
+        - Drops the columns: 'PassengerId', 'Name', 'Ticket', 'Cabin', 'Deck', 
+          'Embarked', and 'Sex'.
+    """
     # encode gender
     df['Sex_Encoded'] = df['Sex'].map({'male': 0, 'female': 1})
 
@@ -51,14 +94,27 @@ def preprocess_data(df: pd.DataFrame):
 
 @task
 def train_model(preprocessed_df: pd.DataFrame):
+    """
+    Trains a RandomForestClassifier on the provided preprocessed DataFrame, logs model 
+    parameters and the trained model to MLflow, and returns the trained classifier 
+    along with test data.
+    Args:
+        preprocessed_df (pd.DataFrame): The preprocessed DataFrame containing features 
+        and the target column 'Survived'.
+    Returns:
+        tuple: A tuple containing:
+            - clf (RandomForestClassifier): The trained RandomForestClassifier model.
+            - x_test (pd.DataFrame): The test set features.
+            - y_test (pd.Series): The test set target values.
+    """
     # Split data
-    X = preprocessed_df.drop('Survived', axis=1)
+    x = preprocessed_df.drop('Survived', axis=1)
     y = preprocessed_df['Survived']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
     # Train model
     clf = RandomForestClassifier(random_state=42)
-    clf.fit(X_train, y_train)
+    clf.fit(x_train, y_train)
 
     # Log parameters
     for param_name, param_value in clf.get_params().items():
@@ -67,26 +123,47 @@ def train_model(preprocessed_df: pd.DataFrame):
     # Log model
     mlflow.sklearn.log_model(clf, "model")
 
-    return clf, X_test, y_test
+    return clf, x_test, y_test
 
 @task
-def evaluate_model(clf: BaseEstimator, X_test: pd.DataFrame, y_test: pd.Series):
+def evaluate_model(clf: BaseEstimator, x_test: pd.DataFrame, y_test: pd.Series):
+    """
+    Evaluates a trained classifier on test data and returns the accuracy score.
+    Parameters:
+        clf (BaseEstimator): The trained classifier implementing a `predict` method.
+        x_test (pd.DataFrame): Test features.
+        y_test (pd.Series): True labels for the test set.
+    Returns:
+        float: Accuracy score of the classifier on the test data.
+    """
     # Predict and evaluate
-    y_pred = clf.predict(X_test)
+    y_pred = clf.predict(x_test)
     acc = accuracy_score(y_test, y_pred)
     return acc
 
 @flow
 def ml_pipeline():
-    
+    """
+    Runs the end-to-end machine learning pipeline for the Titanic 
+    dataset, including data loading, preprocessing,
+    model training, evaluation, and experiment tracking with MLflow.
+    Steps:
+        1. Sets the MLflow tracking URI and experiment name.
+        2. Loads the training data from a CSV file.
+        3. Preprocesses the loaded data.
+        4. Trains a classification model on the preprocessed data.
+        5. Evaluates the trained model on the test set.
+        6. Logs the evaluation metric (accuracy) to MLflow.
+    Returns:
+        None
+    """
     mlflow.set_tracking_uri('sqlite:///mlflow.db')
     mlflow.set_experiment('titanic_experiment2')
-    
-    with mlflow.start_run(): 
+    with mlflow.start_run():
         df = load_data('data/train.csv')
         preprocessed_df = preprocess_data(df)
-        clf, X_test, y_test = train_model(preprocessed_df)
-        accuracy = evaluate_model(clf, X_test, y_test)
+        clf, x_test, y_test = train_model(preprocessed_df)
+        accuracy = evaluate_model(clf, x_test, y_test)
         mlflow.log_metric("accuarcy", accuracy)
 
 if __name__ == "__main__":
