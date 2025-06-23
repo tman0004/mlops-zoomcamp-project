@@ -7,3 +7,4 @@ streamlit==1.46.0
 boto3==1.38.41
 pylint==3.3.7
 pytest==8.3.4
+pre-commit==4.2.0

@@ -1,9 +1,9 @@
 """
 Model Monitoring Dashboard for Titanic Predictions
 This Streamlit application provides a dashboard for monitoring the performance and
- data drift of a deployed Titanic survival prediction model. It connects to an AWS DynamoDB 
- table to retrieve recent prediction data, compares it with reference training data, 
- and visualizes key performance indicators (KPIs) and feature distributions. 
+ data drift of a deployed Titanic survival prediction model. It connects to an AWS DynamoDB
+ table to retrieve recent prediction data, compares it with reference training data,
+ and visualizes key performance indicators (KPIs) and feature distributions.
  The dashboard includes:
 - KPI metrics for total predictions and survival rates, with deltas from model launch.
 - Data drift detection using the Kolmogorov-Smirnov (KS) test for selected features.
@@ -19,10 +19,11 @@ Dependencies:
     - pipeline (custom preprocessing module)
 """
 import boto3
-import streamlit as st
-import pandas as pd
-from scipy.stats import ks_2samp
 import matplotlib.pyplot as plt
+import pandas as pd
+import streamlit as st
+from scipy.stats import ks_2samp
+
 from pipeline import preprocess_data
 
 st.title("Model Monitoring Dashboard")

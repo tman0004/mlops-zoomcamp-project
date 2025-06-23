@@ -1,9 +1,9 @@
 '''
-This module implements an end-to-end machine learning pipeline for the Titanic 
-dataset using Prefect for orchestration and MLflow for experiment tracking. 
-The pipeline includes data loading, preprocessing, model training with a RandomForestClassifier, 
-evaluation, and logging of parameters and metrics. 
-The code is structured with Prefect tasks and flows, and supports experiment 
+This module implements an end-to-end machine learning pipeline for the Titanic
+dataset using Prefect for orchestration and MLflow for experiment tracking.
+The pipeline includes data loading, preprocessing, model training with a RandomForestClassifier,
+evaluation, and logging of parameters and metrics.
+The code is structured with Prefect tasks and flows, and supports experiment
 reproducibility and tracking via MLflow.
 
 Main functionalities:
@@ -16,15 +16,16 @@ Main functionalities:
 Intended for use in MLOps workflows and experiment tracking environments.
 '''
 import os
+
 import mlflow
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import toml
+from mlflow.entities import SourceType
+from prefect import flow, task
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.base import BaseEstimator
-from prefect import flow, task
-from mlflow.entities import SourceType
-import toml
+from sklearn.model_selection import train_test_split
 
 # secrets = toml.load(".streamlit/secrets.toml")
 # aws_access_key_id = secrets["AWS_ACCESS_KEY_ID"]
@@ -33,6 +34,7 @@ import toml
 # # Set environment variables for AWS credentials
 # os.environ["AWS_ACCESS_KEY_ID"] = aws_access_key_id
 # os.environ["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
+
 
 @task
 def load_data(file_name: str):
@@ -49,24 +51,25 @@ def load_data(file_name: str):
     df = pd.read_csv(file_name)
     return df
 
+
 @task
 def preprocess_data(df: pd.DataFrame):
     """
-    Preprocesses the input Titanic DataFrame by encoding categorical variables, handling missing 
+    Preprocesses the input Titanic DataFrame by encoding categorical variables, handling missing
     values, and dropping unnecessary columns.
     Parameters:
         df (pd.DataFrame): The input DataFrame containing Titanic passenger data.
     Returns:
-        pd.DataFrame: The preprocessed DataFrame with encoded features and irrelevant columns 
+        pd.DataFrame: The preprocessed DataFrame with encoded features and irrelevant columns
         removed.
     Processing steps:
         - Encodes the 'Sex' column as 'Sex_Encoded' (male: 0, female: 1).
         - Fills missing values in the 'Age' column with the median age.
-        - Extracts the deck letter from the 'Cabin' column, fills missing values with 'U', 
+        - Extracts the deck letter from the 'Cabin' column, fills missing values with 'U',
           and encodes as 'Deck_Encoded'.
-        - Fills missing values in the 'Embarked' column with the mode and encodes as 
+        - Fills missing values in the 'Embarked' column with the mode and encodes as
           'Embarked_Encoded' (C: 0, Q: 1, S: 2).
-        - Drops the columns: 'PassengerId', 'Name', 'Ticket', 'Cabin', 'Deck', 
+        - Drops the columns: 'PassengerId', 'Name', 'Ticket', 'Cabin', 'Deck',
           'Embarked', and 'Sex'.
     """
     # encode gender
@@ -92,14 +95,15 @@ def preprocess_data(df: pd.DataFrame):
 
     return df
 
+
 @task
 def train_model(preprocessed_df: pd.DataFrame):
     """
-    Trains a RandomForestClassifier on the provided preprocessed DataFrame, logs model 
-    parameters and the trained model to MLflow, and returns the trained classifier 
+    Trains a RandomForestClassifier on the provided preprocessed DataFrame, logs model
+    parameters and the trained model to MLflow, and returns the trained classifier
     along with test data.
     Args:
-        preprocessed_df (pd.DataFrame): The preprocessed DataFrame containing features 
+        preprocessed_df (pd.DataFrame): The preprocessed DataFrame containing features
         and the target column 'Survived'.
     Returns:
         tuple: A tuple containing:
@@ -125,6 +129,7 @@ def train_model(preprocessed_df: pd.DataFrame):
 
     return clf, x_test, y_test
 
+
 @task
 def evaluate_model(clf: BaseEstimator, x_test: pd.DataFrame, y_test: pd.Series):
     """
@@ -141,10 +146,11 @@ def evaluate_model(clf: BaseEstimator, x_test: pd.DataFrame, y_test: pd.Series):
     acc = accuracy_score(y_test, y_pred)
     return acc
 
+
 @flow
 def ml_pipeline():
     """
-    Runs the end-to-end machine learning pipeline for the Titanic 
+    Runs the end-to-end machine learning pipeline for the Titanic
     dataset, including data loading, preprocessing,
     model training, evaluation, and experiment tracking with MLflow.
     Steps:
@@ -165,6 +171,7 @@ def ml_pipeline():
         clf, x_test, y_test = train_model(preprocessed_df)
         accuracy = evaluate_model(clf, x_test, y_test)
         mlflow.log_metric("accuarcy", accuracy)
+
 
 if __name__ == "__main__":
     ml_pipeline()

@@ -20,10 +20,12 @@ Dependencies:
 - Custom modules: pipeline (with load_data, preprocess_data)
 """
 from decimal import Decimal
+
 import boto3
-import streamlit as st
-import pandas as pd
 import mlflow.pyfunc
+import pandas as pd
+import streamlit as st
+
 from pipeline import preprocess_data
 
 mlflow.set_tracking_uri('sqlite:///mlflow.db')
@@ -31,7 +33,7 @@ model = mlflow.pyfunc.load_model(model_uri="models:/titanic_model/2")
 
 st.title("Titanic Model Prediction")
 st.write("""This app predicts whether a passenger survived the Titanic disaster based
-         on various features. You can input the passenger details in the form below, 
+         on various features. You can input the passenger details in the form below,
          and the model will predict the survival status.""")
 st.write("""You can also view the model monitoring dashboard from the left sidebar
          to see how the model is performing over time.""")

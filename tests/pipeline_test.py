@@ -7,24 +7,28 @@ This test suite covers the following pipeline components:
 - Model evaluation (`evaluate_model`)
 Tests include:
 - Unit tests for each pipeline step, verifying correct functionality and output types.
-- Integration test that runs the full pipeline on a small sample dataset to 
+- Integration test that runs the full pipeline on a small sample dataset to
   ensure end-to-end correctness.
 Temporary files and MLflow tracking are used to isolate test runs.
 """
-import sys
 import os
-import pandas as pd
-import numpy as np
+import sys
+
 import mlflow
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from pipeline import load_data, preprocess_data, train_model, evaluate_model
+
+from pipeline import evaluate_model, load_data, preprocess_data, train_model
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-### UNIT TESTS FOR PIPELINE MODULES ###
+# UNIT TESTS FOR PIPELINE MODULES
+
+
 def test_load_data(tmp_path):
     """
     Test the `load_data` function to ensure it correctly loads a CSV file into a pandas DataFrame.
-    This test creates a temporary CSV file with sample data, uses the `load_data.fn` 
+    This test creates a temporary CSV file with sample data, uses the `load_data.fn`
     function to load the file,
     and asserts that the loaded DataFrame matches the original data.
     Args:
@@ -41,13 +45,14 @@ def test_load_data(tmp_path):
     df = load_data.fn(str(file_path))
     pd.testing.assert_frame_equal(df, data)
 
+
 def test_preprocess_data():
     """
     Test the `preprocess_data.fn` function to ensure it correctly processes \
     a sample Titanic DataFrame.
     This test checks that:
     - The processed DataFrame is not empty.
-    - The expected columns ('Survived', 'Age', 'Sex_Encoded', 'Deck_Encoded', 
+    - The expected columns ('Survived', 'Age', 'Sex_Encoded', 'Deck_Encoded',
       'Embarked_Encoded') are present.
     - The 'Sex_Encoded' value for the first row is 0 (corresponding to 'male').
     - The 'Age' value for the first row is not NaN (ensuring missing values are imputed).
@@ -75,6 +80,7 @@ def test_preprocess_data():
     assert not pd.isna(row["Age"])
     assert row["Deck_Encoded"] == 8
     assert row["Embarked_Encoded"] in [0, 1, 2]
+
 
 def test_train_model(tmp_path):
     """
@@ -104,6 +110,7 @@ def test_train_model(tmp_path):
     assert isinstance(y_test, pd.Series)
     assert len(x_test) == len(y_test)
 
+
 def test_evaluate_model():
     """
     Test the evaluate_model function by training a RandomForestClassifier on a simple dataset
@@ -119,7 +126,8 @@ def test_evaluate_model():
     assert isinstance(acc, float)
     assert 0.0 <= acc <= 1.0
 
-#### INTEGRATION TESTS FOR PIPELINE MODULES ####
+
+# INTEGRATION TESTS FOR PIPELINE MODULES
 def test_pipeline_integration(tmp_path):
     """
     Integration test for the entire machine learning pipeline.
