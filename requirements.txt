@@ -8,3 +8,7 @@ boto3==1.38.41
 pylint==3.3.7
 pytest==8.3.4
 pre-commit==4.2.0
+pydantic==2.11.7
+pydantic-core==2.33.2
+cachetools<6,>=5.0.0
+packaging<25
